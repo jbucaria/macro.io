@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "300281451674",
+    "project_id": "macro-io-54134",
+    "storage_bucket": "macro-io-54134.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:300281451674:android:4e28e2bc518570c6bdbb23",
+        "android_client_info": {
+          "package_name": "com.jbucaria.macro.io"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2uSBpTcDhGgh3LAbv4X7duGB-gMRRwY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
