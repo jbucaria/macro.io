@@ -9,7 +9,6 @@ import {
   Button,
   ScrollView,
 } from 'react-native'
-import { Picker } from '@react-native-picker/picker'
 import { db, auth } from '../firebase' // Firestore and Auth
 
 const GoalPage = () => {
@@ -23,48 +22,36 @@ const GoalPage = () => {
   const [step, setStep] = useState(1) // Step for auto-generation flow
 
   // States for the auto-generation process
-  const [workoutFrequency, setWorkoutFrequency] = useState(null)
-  const [height, setHeight] = useState('170')
-  const [weight, setWeight] = useState('70')
-  const [goalType, setGoalType] = useState(null)
   const [currentWeight, setCurrentWeight] = useState('')
   const [goalWeight, setGoalWeight] = useState('')
 
   const nextStep = () => setStep(step + 1)
   const prevStep = () => setStep(step - 1)
 
-  // Final calculation logic based on inputs
+  // Final calculation logic based on desired weight
   const generateMacros = () => {
-    let baseCalories = 2000
-    let caloriesAdjustment = 0
+    const desiredWeight = parseInt(goalWeight)
 
-    switch (workoutFrequency) {
-      case '1-2':
-        caloriesAdjustment = 200
-        break
-      case '3-5':
-        caloriesAdjustment = 400
-        break
-      case '6-7':
-        caloriesAdjustment = 600
-        break
+    if (!desiredWeight) {
+      Alert.alert('Error', 'Please provide a valid goal weight.')
+      return
     }
 
-    baseCalories += caloriesAdjustment
+    // Calculate macronutrients based on 1g of protein, 1g of carbs, and 0.8g of fat per lb of desired weight
+    const calculatedProtein = desiredWeight * 1 // 1g protein per lb of desired weight
+    const calculatedCarbs = desiredWeight * 0.7 // 1g carbs per lb of desired weight
+    const calculatedFat = desiredWeight * 0.8 // 0.8g fat per lb of desired weight
 
-    if (goalType === 'lose') {
-      baseCalories -= 500
-    } else if (goalType === 'gain') {
-      baseCalories += 500
-    }
+    // Calculate calories from each macronutrient
+    const proteinCalories = calculatedProtein * 4 // 4 calories per gram of protein
+    const carbCalories = calculatedCarbs * 4 // 4 calories per gram of carbs
+    const fatCalories = calculatedFat * 9 // 9 calories per gram of fat
 
-    const calculatedProtein = parseInt(weight) * 2
-    const calculatedFat = (baseCalories * 0.25) / 9
-    const calculatedCarbs =
-      (baseCalories - (calculatedProtein * 4 + calculatedFat * 9)) / 4
+    // Total calories from macronutrients
+    const totalCalories = proteinCalories + carbCalories + fatCalories
 
-    // Update the boxes with generated values
-    setManualCalories(baseCalories.toString())
+    // Update the manual input boxes with generated values
+    setManualCalories(totalCalories.toString())
     setManualProtein(Math.round(calculatedProtein).toString())
     setManualFat(Math.round(calculatedFat).toString())
     setManualCarbs(Math.round(calculatedCarbs).toString())
@@ -199,109 +186,6 @@ const GoalPage = () => {
               {step === 1 && (
                 <View>
                   <Text className="text-xl font-bold mb-4 text-center">
-                    How many times a week do you work out?
-                  </Text>
-                  <Button
-                    title="1-2 times"
-                    onPress={() => setWorkoutFrequency('1-2')}
-                    color={workoutFrequency === '1-2' ? 'green' : 'gray'}
-                  />
-                  <Button
-                    title="3-5 times"
-                    onPress={() => setWorkoutFrequency('3-5')}
-                    color={workoutFrequency === '3-5' ? 'green' : 'gray'}
-                  />
-                  <Button
-                    title="6-7 times"
-                    onPress={() => setWorkoutFrequency('6-7')}
-                    color={workoutFrequency === '6-7' ? 'green' : 'gray'}
-                  />
-                  <Button
-                    title="Next"
-                    onPress={nextStep}
-                    disabled={!workoutFrequency}
-                    color="blue"
-                  />
-                </View>
-              )}
-
-              {step === 2 && (
-                <View>
-                  <Text className="text-xl font-bold mb-4 text-center">
-                    Select your height and weight
-                  </Text>
-                  <View className="flex-row justify-between mb-4">
-                    {/* Height Picker */}
-                    <View className="w-1/2 pr-2">
-                      <Text className="text-lg mb-2">Height (cm)</Text>
-                      <Picker selectedValue={height} onValueChange={setHeight}>
-                        {[...Array(81)].map((_, i) => (
-                          <Picker.Item
-                            key={i}
-                            label={`${140 + i}`}
-                            value={`${140 + i}`}
-                          />
-                        ))}
-                      </Picker>
-                    </View>
-
-                    {/* Weight Picker */}
-                    <View className="w-1/2 pl-2">
-                      <Text className="text-lg mb-2">Weight (kg)</Text>
-                      <Picker selectedValue={weight} onValueChange={setWeight}>
-                        {[...Array(121)].map((_, i) => (
-                          <Picker.Item
-                            key={i}
-                            label={`${40 + i}`}
-                            value={`${40 + i}`}
-                          />
-                        ))}
-                      </Picker>
-                    </View>
-                  </View>
-
-                  <View className="flex-row justify-between">
-                    <Button title="Previous" onPress={prevStep} color="gray" />
-                    <Button title="Next" onPress={nextStep} color="blue" />
-                  </View>
-                </View>
-              )}
-
-              {step === 3 && (
-                <View>
-                  <Text className="text-xl font-bold mb-4 text-center">
-                    What is your goal?
-                  </Text>
-                  <Button
-                    title="Lose Weight"
-                    onPress={() => setGoalType('lose')}
-                    color={goalType === 'lose' ? 'green' : 'gray'}
-                  />
-                  <Button
-                    title="Maintain Weight"
-                    onPress={() => setGoalType('maintain')}
-                    color={goalType === 'maintain' ? 'green' : 'gray'}
-                  />
-                  <Button
-                    title="Gain Weight"
-                    onPress={() => setGoalType('gain')}
-                    color={goalType === 'gain' ? 'green' : 'gray'}
-                  />
-                  <View className="flex-row justify-between">
-                    <Button title="Previous" onPress={prevStep} color="gray" />
-                    <Button
-                      title="Next"
-                      onPress={nextStep}
-                      disabled={!goalType}
-                      color="blue"
-                    />
-                  </View>
-                </View>
-              )}
-
-              {step === 4 && (
-                <View>
-                  <Text className="text-xl font-bold mb-4 text-center">
                     Enter your current weight (kg)
                   </Text>
                   <TextInput
@@ -312,7 +196,6 @@ const GoalPage = () => {
                     className="border border-gray-300 rounded-lg px-4 py-3 text-lg mb-4"
                   />
                   <View className="flex-row justify-between">
-                    <Button title="Previous" onPress={prevStep} color="gray" />
                     <Button
                       title="Next"
                       onPress={nextStep}
@@ -323,10 +206,10 @@ const GoalPage = () => {
                 </View>
               )}
 
-              {step === 5 && (
+              {step === 2 && (
                 <View>
                   <Text className="text-xl font-bold mb-4 text-center">
-                    Enter your goal weight (kg)
+                    Enter your desired weight (kg)
                   </Text>
                   <TextInput
                     placeholder="Goal weight"
