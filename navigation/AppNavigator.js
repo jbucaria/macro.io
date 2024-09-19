@@ -4,6 +4,10 @@ import { createStackNavigator } from '@react-navigation/stack'
 import LoginForm from '../components/LoginForm'
 import RegistrationForm from '../components/RegistrationForm'
 import MainAppTabs from './MainAppTabs' // Import your Tab Navigator
+import LogExerciseScreen from '../screens/LogExerciseScreen' // Placeholder for Log Exercise
+import SavedFoodsScreen from '../screens/SavedFoodsScreen' // Placeholder for Saved Foods
+import DescribeFoodScreen from '../screens/DescribeFoodScreen' // Placeholder for Describe Food
+import GoalPage from '../screens/GoalPage' // Import GoalPage for setting goals
 import { auth } from '../firebase' // Firebase Authentication
 
 const Stack = createStackNavigator()
@@ -29,12 +33,35 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator>
         {user ? (
-          // If the user is logged in, navigate to the MainAppTabs
-          <Stack.Screen
-            name="MainAppTabs"
-            component={MainAppTabs} // Register MainAppTabs in Stack Navigator
-            options={{ headerShown: false }} // Hide header in the tab navigation
-          />
+          <>
+            {/* Main App Tabs */}
+            <Stack.Screen
+              name="MainAppTabs"
+              component={MainAppTabs}
+              options={{ headerShown: false }} // Hide header in the tab navigation
+            />
+            {/* Additional Routes */}
+            <Stack.Screen
+              name="LogExercise"
+              component={LogExerciseScreen}
+              options={{ headerShown: true, title: 'Log Exercise' }}
+            />
+            <Stack.Screen
+              name="SavedFoods"
+              component={SavedFoodsScreen}
+              options={{ headerShown: true, title: 'Saved Foods' }}
+            />
+            <Stack.Screen
+              name="DescribeFood"
+              component={DescribeFoodScreen}
+              options={{ headerShown: true, title: 'Describe Food' }}
+            />
+            <Stack.Screen
+              name="GoalPage"
+              component={GoalPage}
+              options={{ headerShown: true, title: 'Set Nutrition Goals' }} // Add the GoalPage route
+            />
+          </>
         ) : (
           <>
             <Stack.Screen
