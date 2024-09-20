@@ -40,6 +40,7 @@ const HomeScreen = () => {
     }
   }
 
+  console.log('homescreen:', selectedDate)
   return (
     <View className="flex-1 bg-white">
       <DateCarousel
@@ -51,25 +52,21 @@ const HomeScreen = () => {
       <DailyTotals />
       {/* Daily Totals Component */}
       <DailyMeals selectedDate={selectedDate} />
-
       <View className="flex-1 bg-white">
         <DailyMeals />
       </View>
-
       <TouchableOpacity
         onPress={toggleModal}
         className="absolute bottom-10 right-10 bg-blue-500 p-4 rounded-full"
       >
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
-
       {/* Bottom Modal Component */}
       <BottomModal
         visible={modalVisible}
         onClose={toggleModal}
         onOptionSelect={handleOptionSelect}
       />
-
       {/* Scan Food Camera Modal */}
       <ScanFoodCamera
         visible={cameraVisible}

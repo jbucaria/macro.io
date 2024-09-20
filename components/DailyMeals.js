@@ -14,12 +14,14 @@ const DailyMeals = ({ selectedDate }) => {
   const [meals, setMeals] = useState([]) // Store all meals for the selected date
   const [selectedMeal, setSelectedMeal] = useState(null) // Store the selected meal for the modal
   const [modalVisible, setModalVisible] = useState(false)
-
+  console.log('selected:', selectedDate)
   // Convert selectedDate to a Date object
   const localDate = new Date(selectedDate)
+  console.log('local:', localDate)
 
   // Convert to UTC to handle timezone differences
   const startOfDayUTC = addHours(startOfDay(localDate), 0) // Normalize to UTC start of day
+  console.log(startOfDay)
   const endOfDayUTC = addHours(endOfDay(localDate), 0) // Normalize to UTC end of day
 
   useEffect(() => {
