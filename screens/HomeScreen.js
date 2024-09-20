@@ -8,8 +8,12 @@ import DailyTotals from '../components/DailyTotals'
 import LastLoggedMeal from '../components/LastLoggedMeal'
 import DailyMeals from '../components/DailyMeals'
 import DateCarousel from '../components/DateCarousel'
+import { format } from 'date-fns'
 
 const HomeScreen = () => {
+  const [selectedDate, setSelectedDate] = useState(
+    format(new Date(), 'yyyy-MM-dd')
+  )
   const [modalVisible, setModalVisible] = useState(false)
   const [cameraVisible, setCameraVisible] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0) // Trigger for refreshing last meal
@@ -38,9 +42,15 @@ const HomeScreen = () => {
 
   return (
     <View className="flex-1 bg-white">
-      <DateCarousel />
-      {/* Daily Totals Component */}
+      <DateCarousel
+        onDateSelect={date => {
+          setSelectedDate(date)
+        }}
+        selectedDate={selectedDate}
+      />
       <DailyTotals />
+      {/* Daily Totals Component */}
+      <DailyMeals selectedDate={selectedDate} />
 
       <View className="flex-1 bg-white">
         <DailyMeals />

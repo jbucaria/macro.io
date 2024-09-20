@@ -12,10 +12,13 @@ const DateCarousel = ({ onDateSelect }) => {
   useEffect(() => {
     const today = new Date()
     const datesArray = []
+    console.log('today:', today)
+    // Include today and 29 days before it
     for (let i = 0; i < 30; i++) {
       datesArray.push(format(subDays(today, i), 'yyyy-MM-dd'))
     }
-    setDates(datesArray) // Do not reverse the array, so the most recent date stays on the right
+
+    setDates(datesArray)
   }, [])
 
   // Handle date selection

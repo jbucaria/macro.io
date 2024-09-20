@@ -10,17 +10,13 @@ import {
 import { db, auth } from '../firebase'
 import { format, startOfDay, endOfDay, addHours } from 'date-fns'
 
-const DailyMeals = () => {
+const DailyMeals = ({ selectedDate }) => {
   const [meals, setMeals] = useState([]) // Store all meals for the selected date
   const [selectedMeal, setSelectedMeal] = useState(null) // Store the selected meal for the modal
   const [modalVisible, setModalVisible] = useState(false)
 
-  // Hardcoded date for testing purposes (Sep 19, 2024)
-  const hardcodedDate = new Date('2024-09-19')
-
-  const localDate = new Date(
-    hardcodedDate.getTime() + hardcodedDate.getTimezoneOffset() * 60000
-  )
+  // Convert selectedDate to a Date object
+  const localDate = new Date(selectedDate)
 
   // Convert to UTC to handle timezone differences
   const startOfDayUTC = addHours(startOfDay(localDate), 0) // Normalize to UTC start of day
@@ -55,7 +51,7 @@ const DailyMeals = () => {
     }
 
     fetchMeals()
-  }, [startOfDayUTC, endOfDayUTC])
+  }, [selectedDate]) // Re-fetch meals when selectedDate changes
 
   const toggleModal = (meal = null) => {
     setSelectedMeal(meal)
@@ -86,16 +82,14 @@ const DailyMeals = () => {
 
   return (
     <ScrollView className="p-4">
-      {/* Use format to properly display the hardcoded date */}
-      <Text className="text-lg font-bold mb-4">
+      {/* <Text className="text-lg font-bold mb-4">
         Meals on {format(localDate, 'MMM dd, yyyy')}
-      </Text>
+      </Text> */}
 
-      {/* Render all meals for the hardcoded date */}
       {meals.map(meal => (
         <TouchableOpacity
           key={meal.id}
-          onPress={() => toggleModal(meal)} // Open modal with meal details
+          onPress={() => toggleModal(meal)}
           className="bg-white p-4 mb-4 rounded-lg shadow-md"
         >
           <Text>Food: {meal.food}</Text>
@@ -103,8 +97,6 @@ const DailyMeals = () => {
           <Text>Protein: {meal.protein}g</Text>
           <Text>Fat: {meal.fat}g</Text>
           <Text>Carbs: {meal.carbohydrates}g</Text>
-
-          {/* Use a date formatter to display the time */}
           <Text>
             Logged At:{' '}
             {meal.createdAt &&
@@ -116,7 +108,6 @@ const DailyMeals = () => {
         </TouchableOpacity>
       ))}
 
-      {/* Modal for viewing, editing, or deleting a meal */}
       <Modal
         animationType="slide"
         transparent={true}
