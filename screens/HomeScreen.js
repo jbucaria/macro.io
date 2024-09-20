@@ -7,6 +7,7 @@ import ScanFoodCamera from '../components/ScanFoodCamera'
 import DailyTotals from '../components/DailyTotals'
 import LastLoggedMeal from '../components/LastLoggedMeal'
 import DailyMeals from '../components/DailyMeals'
+import DateCarousel from '../components/DateCarousel'
 
 const HomeScreen = () => {
   const [modalVisible, setModalVisible] = useState(false)
@@ -37,6 +38,7 @@ const HomeScreen = () => {
 
   return (
     <View className="flex-1 bg-white">
+      <DateCarousel />
       {/* Daily Totals Component */}
       <DailyTotals />
 

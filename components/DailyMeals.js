@@ -8,17 +8,26 @@ import {
   ScrollView,
 } from 'react-native'
 import { db, auth } from '../firebase'
-import { useFocusEffect } from '@react-navigation/native'
+import { format, startOfDay, endOfDay, addHours } from 'date-fns'
 
 const DailyMeals = () => {
-  const [meals, setMeals] = useState([]) // Store all meals for the day
+  const [meals, setMeals] = useState([]) // Store all meals for the selected date
   const [selectedMeal, setSelectedMeal] = useState(null) // Store the selected meal for the modal
   const [modalVisible, setModalVisible] = useState(false)
 
-  const today = new Date().toISOString().split('T')[0] // Get today's date in YYYY-MM-DD format
+  // Hardcoded date for testing purposes (Sep 19, 2024)
+  const hardcodedDate = new Date('2024-09-19')
 
-  useFocusEffect(
-    React.useCallback(() => {
+  const localDate = new Date(
+    hardcodedDate.getTime() + hardcodedDate.getTimezoneOffset() * 60000
+  )
+
+  // Convert to UTC to handle timezone differences
+  const startOfDayUTC = addHours(startOfDay(localDate), 0) // Normalize to UTC start of day
+  const endOfDayUTC = addHours(endOfDay(localDate), 0) // Normalize to UTC end of day
+
+  useEffect(() => {
+    const fetchMeals = async () => {
       const currentUser = auth.currentUser
       if (!currentUser) {
         return
@@ -29,26 +38,24 @@ const DailyMeals = () => {
         .collection('users')
         .doc(userId)
         .collection('meals')
-        .where('createdAt', '>=', new Date(today)) // Fetch meals logged today
+        .where('createdAt', '>=', startOfDayUTC)
+        .where('createdAt', '<=', endOfDayUTC)
         .orderBy('createdAt', 'desc')
 
-      // Set up the Firestore real-time listener
-      const unsubscribe = mealsRef.onSnapshot(
-        snapshot => {
-          const mealsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          setMeals(mealsData)
-        },
-        error => {
-          console.error('Error fetching real-time meals:', error)
-        }
-      )
+      try {
+        const snapshot = await mealsRef.get()
+        const mealsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        setMeals(mealsData)
+      } catch (error) {
+        console.error('Error fetching meals:', error)
+      }
+    }
 
-      return () => unsubscribe() // Clean up the listener when the component is unmounted
-    }, [today])
-  )
+    fetchMeals()
+  }, [startOfDayUTC, endOfDayUTC])
 
   const toggleModal = (meal = null) => {
     setSelectedMeal(meal)
@@ -79,9 +86,12 @@ const DailyMeals = () => {
 
   return (
     <ScrollView className="p-4">
-      <Text className="text-lg font-bold mb-4">Today's Meals</Text>
+      {/* Use format to properly display the hardcoded date */}
+      <Text className="text-lg font-bold mb-4">
+        Meals on {format(localDate, 'MMM dd, yyyy')}
+      </Text>
 
-      {/* Render all meals for the day */}
+      {/* Render all meals for the hardcoded date */}
       {meals.map(meal => (
         <TouchableOpacity
           key={meal.id}
@@ -93,9 +103,15 @@ const DailyMeals = () => {
           <Text>Protein: {meal.protein}g</Text>
           <Text>Fat: {meal.fat}g</Text>
           <Text>Carbs: {meal.carbohydrates}g</Text>
+
+          {/* Use a date formatter to display the time */}
           <Text>
             Logged At:{' '}
-            {new Date(meal.createdAt.seconds * 1000).toLocaleTimeString()}
+            {meal.createdAt &&
+              format(
+                new Date(meal.createdAt.seconds * 1000),
+                'MMM dd, yyyy h:mm a'
+              )}
           </Text>
         </TouchableOpacity>
       ))}
@@ -126,9 +142,11 @@ const DailyMeals = () => {
                 <Text>Carbs: {selectedMeal.carbohydrates}g</Text>
                 <Text>
                   Logged At:{' '}
-                  {new Date(
-                    selectedMeal.createdAt.seconds * 1000
-                  ).toLocaleString()}
+                  {selectedMeal.createdAt &&
+                    format(
+                      new Date(selectedMeal.createdAt.seconds * 1000),
+                      'MMM dd, yyyy h:mm a'
+                    )}
                 </Text>
 
                 <Button

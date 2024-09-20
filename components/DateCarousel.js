@@ -8,14 +8,14 @@ const DateCarousel = ({ onDateSelect }) => {
     format(new Date(), 'yyyy-MM-dd')
   )
 
-  // Generate dates for the past month
+  // Generate dates for the past 30 days
   useEffect(() => {
     const today = new Date()
     const datesArray = []
     for (let i = 0; i < 30; i++) {
       datesArray.push(format(subDays(today, i), 'yyyy-MM-dd'))
     }
-    setDates(datesArray)
+    setDates(datesArray) // Do not reverse the array, so the most recent date stays on the right
   }, [])
 
   // Handle date selection
@@ -44,6 +44,7 @@ const DateCarousel = ({ onDateSelect }) => {
         keyExtractor={item => item}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 10 }}
+        inverted // This makes the scroll start from the right, where the current date is
       />
     </View>
   )
