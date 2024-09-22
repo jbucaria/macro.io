@@ -1,5 +1,16 @@
-import firebase from 'firebase/compat/app'
-import { db, auth } from '../firebase'
+// saveMeal.js
+
+import { db, auth } from '../firebase' // Adjust the path as necessary
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDoc,
+  increment,
+  serverTimestamp,
+  addDoc,
+} from 'firebase/firestore'
 import { format } from 'date-fns'
 import { utcToZonedTime } from 'date-fns-tz'
 
@@ -23,48 +34,46 @@ export const saveMeal = async (foodInput, mealData) => {
 
     const { calories = 0, protein = 0, fat = 0, carbohydrates = 0 } = mealData
 
-    // Use a sub-collection for the day (e.g., meals/2024-09-21/meals)
-    const mealRef = db
-      .collection('users')
-      .doc(userId)
-      .collection('meals')
-      .doc(today) // Document for today's date
-      .collection('meals') // Sub-collection for the day’s meals
-      .doc() // Auto-generate meal ID
+    // Reference to the meals collection for the current date
+    const mealsCollectionRef = collection(
+      db,
+      'users',
+      userId,
+      'meals',
+      today,
+      'meals'
+    )
 
-    await mealRef.set({
+    // Add a new meal document with an auto-generated ID
+    await addDoc(mealsCollectionRef, {
       food: foodInput,
       calories,
       protein,
       fat,
       carbohydrates,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
     })
 
-    // Update daily totals
-    const dailyTotalsRef = db
-      .collection('users')
-      .doc(userId)
-      .collection('dailyTotals')
-      .doc(today)
-    const docSnapshot = await dailyTotalsRef.get()
+    // Reference to the daily totals document for the current date
+    const dailyTotalsRef = doc(db, 'users', userId, 'dailyTotals', today)
+    const docSnapshot = await getDoc(dailyTotalsRef)
 
-    if (docSnapshot.exists) {
+    if (docSnapshot.exists()) {
       // If the document exists, update the totals by incrementing the existing values
-      await dailyTotalsRef.update({
-        calories: firebase.firestore.FieldValue.increment(calories),
-        protein: firebase.firestore.FieldValue.increment(protein),
-        fat: firebase.firestore.FieldValue.increment(fat),
-        carbohydrates: firebase.firestore.FieldValue.increment(carbohydrates),
+      await updateDoc(dailyTotalsRef, {
+        calories: increment(calories),
+        protein: increment(protein),
+        fat: increment(fat),
+        carbohydrates: increment(carbohydrates),
       })
     } else {
       // If the document does not exist, create a new one with the totals
-      await dailyTotalsRef.set({
+      await setDoc(dailyTotalsRef, {
         calories,
         protein,
         fat,
         carbohydrates,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt: serverTimestamp(),
       })
     }
 

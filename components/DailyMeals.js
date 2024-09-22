@@ -10,7 +10,14 @@ import {
   View,
 } from 'react-native'
 import { db, auth } from '../firebase' // Adjust the path as necessary
-import { collection, doc, getDocs, deleteDoc } from 'firebase/firestore' // Import Firestore functions
+import {
+  collection,
+  doc,
+  onSnapshot,
+  deleteDoc,
+  query,
+  orderBy,
+} from 'firebase/firestore' // Import Firestore functions
 
 const DailyMeals = ({ selectedDate }) => {
   const [meals, setMeals] = useState([]) // Store all meals for the selected date
@@ -18,6 +25,8 @@ const DailyMeals = ({ selectedDate }) => {
   const [modalVisible, setModalVisible] = useState(false)
 
   useEffect(() => {
+    let unsubscribe // To store the unsubscribe function from onSnapshot
+
     const fetchMeals = async () => {
       const currentUser = auth.currentUser
       if (!currentUser) {
@@ -38,20 +47,22 @@ const DailyMeals = ({ selectedDate }) => {
           'meals'
         )
 
-        // Fetch documents from the meals collection
-        const snapshot = await getDocs(mealsRef)
+        // Create a query to order meals by creation time (optional)
+        const mealsQuery = query(mealsRef, orderBy('createdAt', 'desc'))
 
-        if (snapshot.empty) {
-          console.log('No meals found for this date.')
-          setMeals([]) // Ensure meals state is empty
-        } else {
-          const mealsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-
-          setMeals(mealsData)
-        }
+        // Set up real-time listener
+        unsubscribe = onSnapshot(mealsQuery, snapshot => {
+          if (snapshot.empty) {
+            console.log('No meals found for this date.')
+            setMeals([]) // Ensure meals state is empty
+          } else {
+            const mealsData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+            }))
+            setMeals(mealsData)
+          }
+        })
       } catch (error) {
         console.error('Error fetching meals:', error)
       }
@@ -59,6 +70,13 @@ const DailyMeals = ({ selectedDate }) => {
 
     if (selectedDate) {
       fetchMeals() // Only fetch if selectedDate is valid
+    }
+
+    // Clean up the listener when component unmounts or selectedDate changes
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
     }
   }, [selectedDate]) // Re-fetch meals when `selectedDate` changes
 
@@ -90,8 +108,7 @@ const DailyMeals = ({ selectedDate }) => {
       // Delete the meal document
       await deleteDoc(mealDocRef)
 
-      // Remove the deleted meal from the state
-      setMeals(meals.filter(meal => meal.id !== mealId))
+      // No need to manually update state; onSnapshot will handle it
       toggleModal()
     } catch (error) {
       console.error('Error deleting meal:', error)
@@ -113,8 +130,7 @@ const DailyMeals = ({ selectedDate }) => {
           <Text>Carbs: {meal.carbohydrates}g</Text>
           <Text>
             Logged At:{' '}
-            {meal.createdAt &&
-              new Date(meal.createdAt.seconds * 1000).toLocaleString()}
+            {meal.createdAt && meal.createdAt.toDate().toLocaleString()}
           </Text>
         </TouchableOpacity>
       ))}
@@ -145,9 +161,7 @@ const DailyMeals = ({ selectedDate }) => {
                 <Text>
                   Logged At:{' '}
                   {selectedMeal.createdAt &&
-                    new Date(
-                      selectedMeal.createdAt.seconds * 1000
-                    ).toLocaleString()}
+                    selectedMeal.createdAt.toDate().toLocaleString()}
                 </Text>
 
                 <Button
