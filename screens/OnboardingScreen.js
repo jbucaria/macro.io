@@ -1,4 +1,5 @@
 // OnboardingScreen.js
+
 import React, { useState } from 'react'
 import {
   View,
@@ -9,9 +10,14 @@ import {
   ScrollView,
   Button,
 } from 'react-native'
-import { db, auth } from '../firebase'
+import { auth, db } from '../firebaseConfig' // Adjust the path as necessary
+import { useNavigation } from '@react-navigation/native'
 
-const OnboardingScreen = ({ navigation }) => {
+// Import Firebase Modular SDK functions
+import { doc, setDoc } from 'firebase/firestore'
+import { useAuthState } from 'react-firebase-hooks/auth' // Optional: For auth state management
+
+const OnboardingScreen = () => {
   const [step, setStep] = useState(1)
   const [currentWeight, setCurrentWeight] = useState('')
   const [goalWeight, setGoalWeight] = useState('')
@@ -21,8 +27,13 @@ const OnboardingScreen = ({ navigation }) => {
   const [carbs, setCarbs] = useState('')
   const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(false)
 
-  const nextStep = () => setStep(step + 1)
-  const prevStep = () => setStep(step - 1)
+  const navigation = useNavigation()
+
+  // Optional: Monitor authentication state
+  // const [user, loading, error] = useAuthState(auth);
+
+  const nextStep = () => setStep(prev => prev + 1)
+  const prevStep = () => setStep(prev => prev - 1)
 
   const calculateMacros = () => {
     const desiredWeight = parseFloat(goalWeight)
@@ -43,6 +54,8 @@ const OnboardingScreen = ({ navigation }) => {
     setProtein(calculatedProtein.toFixed(0))
     setFat(calculatedFat.toFixed(0))
     setCarbs(calculatedCarbs.toFixed(0))
+
+    nextStep() // Move to the next step after calculation
   }
 
   const saveGoals = async () => {
@@ -53,91 +66,132 @@ const OnboardingScreen = ({ navigation }) => {
     }
 
     try {
-      await db
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('goals')
-        .doc('nutrition')
-        .set({
-          calories: parseInt(calories),
-          protein: parseInt(protein),
-          fat: parseInt(fat),
-          carbohydrates: parseInt(carbs),
-        })
+      // Reference to the 'nutrition' document in the 'goals' collection
+      const nutritionDocRef = doc(
+        db,
+        'users',
+        currentUser.uid,
+        'goals',
+        'nutrition'
+      )
 
-      Alert.alert('Success', 'Goals saved successfully!')
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainAppTabs' }],
+      // Set the goals in Firestore with modular syntax
+      await setDoc(nutritionDocRef, {
+        calories: parseInt(calories, 10),
+        protein: parseInt(protein, 10),
+        fat: parseInt(fat, 10),
+        carbohydrates: parseInt(carbs, 10),
+        createdAt: new Date(), // Consider using serverTimestamp() for consistency
       })
+
+      Alert.alert('Success', 'Goals saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainAppTabs' }],
+            }),
+        },
+      ])
     } catch (error) {
-      console.error(error)
+      console.error('Error saving goals:', error)
       Alert.alert('Error', 'Failed to save goals.')
     }
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white', padding: 16 }}>
-      <ScrollView>
+    <View className="flex-1 bg-white p-4">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        {/* Step 1: Privacy Policy Agreement */}
         {step === 1 && (
-          <View>
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: 16,
-              }}
-            >
+          <View className="flex-1 justify-center">
+            <Text className="text-2xl font-bold text-center mb-6">
               Privacy Policy
             </Text>
             <TouchableOpacity
               onPress={() => setAgreedToPrivacyPolicy(!agreedToPrivacyPolicy)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 16,
-              }}
+              className="flex-row items-center mb-6"
             >
               <View
-                style={{
-                  height: 24,
-                  width: 24,
-                  marginRight: 8,
-                  borderRadius: 4,
-                  borderWidth: 1,
-                  borderColor: '#ccc',
-                  backgroundColor: agreedToPrivacyPolicy ? '#007bff' : 'white',
-                }}
+                className={`h-6 w-6 mr-3 border border-gray-400 rounded ${
+                  agreedToPrivacyPolicy ? 'bg-blue-500' : 'bg-white'
+                }`}
               />
-              <Text>I agree to the Privacy Policy</Text>
+              <Text className="text-lg">I agree to the Privacy Policy</Text>
             </TouchableOpacity>
             <Button
               title="Next"
               onPress={nextStep}
               disabled={!agreedToPrivacyPolicy}
-              color="blue"
+              color="#1E90FF"
             />
           </View>
         )}
 
-        {/* Steps for weight and macro calculations */}
+        {/* Step 2: Enter Current Weight */}
+        {step === 2 && (
+          <View className="flex-1 justify-center">
+            <Text className="text-2xl font-bold text-center mb-6">
+              Enter Your Current Weight
+            </Text>
+            <TextInput
+              placeholder="Current Weight (kg)"
+              value={currentWeight}
+              onChangeText={setCurrentWeight}
+              keyboardType="numeric"
+              className="border border-gray-300 p-3 mb-4 rounded-lg"
+            />
+            <View className="flex-row justify-between">
+              <Button title="Back" onPress={prevStep} color="#A9A9A9" />
+              <Button
+                title="Next"
+                onPress={nextStep}
+                disabled={currentWeight.trim() === ''}
+                color="#1E90FF"
+              />
+            </View>
+          </View>
+        )}
 
-        {/* Last step for saving goals */}
+        {/* Step 3: Enter Goal Weight */}
+        {step === 3 && (
+          <View className="flex-1 justify-center">
+            <Text className="text-2xl font-bold text-center mb-6">
+              Enter Your Goal Weight
+            </Text>
+            <TextInput
+              placeholder="Goal Weight (kg)"
+              value={goalWeight}
+              onChangeText={setGoalWeight}
+              keyboardType="numeric"
+              className="border border-gray-300 p-3 mb-4 rounded-lg"
+            />
+            <View className="flex-row justify-between">
+              <Button title="Back" onPress={prevStep} color="#A9A9A9" />
+              <Button
+                title="Calculate Macros"
+                onPress={calculateMacros}
+                disabled={goalWeight.trim() === ''}
+                color="#32CD32"
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Step 4: Display Calculated Macros and Save */}
         {step === 4 && (
-          <View>
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: 16,
-              }}
-            >
+          <View className="flex-1 justify-center">
+            <Text className="text-2xl font-bold text-center mb-6">
               Your Calculated Macros
             </Text>
-            <Text>Calories: {calories}</Text>
-            <Button title="Save Goals" onPress={saveGoals} color="green" />
+            <View className="mb-4">
+              <Text className="text-lg">Calories: {calories}</Text>
+              <Text className="text-lg">Protein: {protein}g</Text>
+              <Text className="text-lg">Fat: {fat}g</Text>
+              <Text className="text-lg">Carbohydrates: {carbs}g</Text>
+            </View>
+            <Button title="Save Goals" onPress={saveGoals} color="#32CD32" />
           </View>
         )}
       </ScrollView>
