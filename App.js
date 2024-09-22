@@ -1,5 +1,7 @@
+// App.js
 import React from 'react'
-import AppNavigator from './navigation/AppNavigator' // Import your navigator
+import { app } from './firebase'
+import AppNavigator from './navigation/AppNavigator'
 
 const App = () => {
   return <AppNavigator />

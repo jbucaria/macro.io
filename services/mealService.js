@@ -1,5 +1,5 @@
-import { db, auth } from '../firebase'
 import firebase from 'firebase/compat/app'
+import { db, auth } from '../firebase'
 import { format } from 'date-fns'
 import { utcToZonedTime } from 'date-fns-tz'
 
@@ -19,14 +19,20 @@ export const saveMeal = async (foodInput, mealData) => {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const now = new Date()
     const zonedDate = utcToZonedTime(now, timeZone)
-    const today = format(zonedDate, 'yyyy-MM-dd')
+    const today = format(zonedDate, 'yyyy-MM-dd') // Format the date as YYYY-MM-DD
 
     const { calories = 0, protein = 0, fat = 0, carbohydrates = 0 } = mealData
 
-    const batch = db.batch()
+    // Use a sub-collection for the day (e.g., meals/2024-09-21/meals)
+    const mealRef = db
+      .collection('users')
+      .doc(userId)
+      .collection('meals')
+      .doc(today) // Document for today's date
+      .collection('meals') // Sub-collection for the day’s meals
+      .doc() // Auto-generate meal ID
 
-    const mealRef = db.collection('users').doc(userId).collection('meals').doc()
-    batch.set(mealRef, {
+    await mealRef.set({
       food: foodInput,
       calories,
       protein,
@@ -35,22 +41,25 @@ export const saveMeal = async (foodInput, mealData) => {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     })
 
+    // Update daily totals
     const dailyTotalsRef = db
       .collection('users')
       .doc(userId)
       .collection('dailyTotals')
       .doc(today)
-
     const docSnapshot = await dailyTotalsRef.get()
+
     if (docSnapshot.exists) {
-      batch.update(dailyTotalsRef, {
+      // If the document exists, update the totals by incrementing the existing values
+      await dailyTotalsRef.update({
         calories: firebase.firestore.FieldValue.increment(calories),
         protein: firebase.firestore.FieldValue.increment(protein),
         fat: firebase.firestore.FieldValue.increment(fat),
         carbohydrates: firebase.firestore.FieldValue.increment(carbohydrates),
       })
     } else {
-      batch.set(dailyTotalsRef, {
+      // If the document does not exist, create a new one with the totals
+      await dailyTotalsRef.set({
         calories,
         protein,
         fat,
@@ -58,8 +67,6 @@ export const saveMeal = async (foodInput, mealData) => {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       })
     }
-
-    await batch.commit()
 
     return {
       success: true,

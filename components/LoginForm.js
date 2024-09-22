@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { View, TextInput, Button, Text, Alert } from 'react-native'
 import { auth } from '../firebase' // Firebase authentication
 import { useNavigation } from '@react-navigation/native' // For navigation
+import { signInWithEmailAndPassword } from 'firebase/auth'
 
 const LoginForm = () => {
   const [email, setEmail] = useState('')
@@ -11,7 +12,7 @@ const LoginForm = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await auth.signInWithEmailAndPassword(email, password)
+      const response = await signInWithEmailAndPassword(auth, email, password)
       if (response.user) {
         Alert.alert('Login Successful')
         navigation.navigate('MainAppTabs') // Navigate to the Tab Navigator (MainAppTabs)

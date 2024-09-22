@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react'
+// DailyTotals.js
+
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -8,6 +10,7 @@ import {
 } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { db, auth } from '../firebase' // Import Firestore and Auth
+import { doc, getDoc } from 'firebase/firestore' // Import Firestore functions
 
 const DailyTotals = () => {
   const [totals, setTotals] = useState({
@@ -40,19 +43,16 @@ const DailyTotals = () => {
 
         try {
           // Fetch daily totals
-          const dailyTotalsRef = db
-            .collection('users')
-            .doc(userId)
-            .collection('dailyTotals')
-            .doc(today)
-          const dailyDoc = await dailyTotalsRef.get()
+          const dailyTotalsRef = doc(db, 'users', userId, 'dailyTotals', today)
+          const dailyDoc = await getDoc(dailyTotalsRef)
 
-          if (dailyDoc.exists) {
+          if (dailyDoc.exists()) {
+            const data = dailyDoc.data()
             setTotals({
-              calories: dailyDoc.data().calories || 0,
-              protein: dailyDoc.data().protein || 0,
-              fat: dailyDoc.data().fat || 0,
-              carbohydrates: dailyDoc.data().carbohydrates || 0,
+              calories: data.calories || 0,
+              protein: data.protein || 0,
+              fat: data.fat || 0,
+              carbohydrates: data.carbohydrates || 0,
             })
           } else {
             setTotals({
@@ -64,19 +64,16 @@ const DailyTotals = () => {
           }
 
           // Fetch user goals
-          const goalsRef = db
-            .collection('users')
-            .doc(userId)
-            .collection('goals')
-            .doc('nutrition')
-          const goalsDoc = await goalsRef.get()
+          const goalsRef = doc(db, 'users', userId, 'goals', 'nutrition')
+          const goalsDoc = await getDoc(goalsRef)
 
-          if (goalsDoc.exists) {
+          if (goalsDoc.exists()) {
+            const data = goalsDoc.data()
             setGoals({
-              calories: goalsDoc.data().calories || 0,
-              protein: goalsDoc.data().protein || 0,
-              fat: goalsDoc.data().fat || 0,
-              carbohydrates: goalsDoc.data().carbohydrates || 0,
+              calories: data.calories || 0,
+              protein: data.protein || 0,
+              fat: data.fat || 0,
+              carbohydrates: data.carbohydrates || 0,
             })
           } else {
             Alert.alert(

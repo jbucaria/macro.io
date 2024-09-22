@@ -1,59 +1,66 @@
+// DailyMeals.js
+
 import React, { useState, useEffect } from 'react'
 import {
-  View,
+  ScrollView,
   Text,
   TouchableOpacity,
   Modal,
   Button,
-  ScrollView,
+  View,
 } from 'react-native'
-import { db, auth } from '../firebase'
-import { format, startOfDay, endOfDay, addHours } from 'date-fns'
+import { db, auth } from '../firebase' // Adjust the path as necessary
+import { collection, doc, getDocs, deleteDoc } from 'firebase/firestore' // Import Firestore functions
 
 const DailyMeals = ({ selectedDate }) => {
   const [meals, setMeals] = useState([]) // Store all meals for the selected date
   const [selectedMeal, setSelectedMeal] = useState(null) // Store the selected meal for the modal
   const [modalVisible, setModalVisible] = useState(false)
-  console.log('selected:', selectedDate)
-  // Convert selectedDate to a Date object
-  const localDate = new Date(selectedDate)
-  console.log('local:', localDate)
-
-  // Convert to UTC to handle timezone differences
-  const startOfDayUTC = addHours(startOfDay(localDate), 0) // Normalize to UTC start of day
-  console.log(startOfDay)
-  const endOfDayUTC = addHours(endOfDay(localDate), 0) // Normalize to UTC end of day
 
   useEffect(() => {
     const fetchMeals = async () => {
       const currentUser = auth.currentUser
       if (!currentUser) {
+        console.error('No user logged in.')
         return
       }
 
       const userId = currentUser.uid
-      const mealsRef = db
-        .collection('users')
-        .doc(userId)
-        .collection('meals')
-        .where('createdAt', '>=', startOfDayUTC)
-        .where('createdAt', '<=', endOfDayUTC)
-        .orderBy('createdAt', 'desc')
 
       try {
-        const snapshot = await mealsRef.get()
-        const mealsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        setMeals(mealsData)
+        // Reference to the meals collection for the selected date
+        const mealsRef = collection(
+          db,
+          'users',
+          userId,
+          'meals',
+          selectedDate,
+          'meals'
+        )
+
+        // Fetch documents from the meals collection
+        const snapshot = await getDocs(mealsRef)
+
+        if (snapshot.empty) {
+          console.log('No meals found for this date.')
+          setMeals([]) // Ensure meals state is empty
+        } else {
+          const mealsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+
+          setMeals(mealsData)
+        }
       } catch (error) {
         console.error('Error fetching meals:', error)
       }
     }
 
-    fetchMeals()
-  }, [selectedDate]) // Re-fetch meals when selectedDate changes
+    if (selectedDate) {
+      fetchMeals() // Only fetch if selectedDate is valid
+    }
+  }, [selectedDate]) // Re-fetch meals when `selectedDate` changes
 
   const toggleModal = (meal = null) => {
     setSelectedMeal(meal)
@@ -69,13 +76,22 @@ const DailyMeals = ({ selectedDate }) => {
     const userId = currentUser.uid
 
     try {
-      await db
-        .collection('users')
-        .doc(userId)
-        .collection('meals')
-        .doc(mealId)
-        .delete()
-      setMeals(meals.filter(meal => meal.id !== mealId)) // Remove the deleted meal from the state
+      // Reference to the specific meal document
+      const mealDocRef = doc(
+        db,
+        'users',
+        userId,
+        'meals',
+        selectedDate,
+        'meals',
+        mealId
+      )
+
+      // Delete the meal document
+      await deleteDoc(mealDocRef)
+
+      // Remove the deleted meal from the state
+      setMeals(meals.filter(meal => meal.id !== mealId))
       toggleModal()
     } catch (error) {
       console.error('Error deleting meal:', error)
@@ -84,10 +100,6 @@ const DailyMeals = ({ selectedDate }) => {
 
   return (
     <ScrollView className="p-4">
-      {/* <Text className="text-lg font-bold mb-4">
-        Meals on {format(localDate, 'MMM dd, yyyy')}
-      </Text> */}
-
       {meals.map(meal => (
         <TouchableOpacity
           key={meal.id}
@@ -102,10 +114,7 @@ const DailyMeals = ({ selectedDate }) => {
           <Text>
             Logged At:{' '}
             {meal.createdAt &&
-              format(
-                new Date(meal.createdAt.seconds * 1000),
-                'MMM dd, yyyy h:mm a'
-              )}
+              new Date(meal.createdAt.seconds * 1000).toLocaleString()}
           </Text>
         </TouchableOpacity>
       ))}
@@ -136,10 +145,9 @@ const DailyMeals = ({ selectedDate }) => {
                 <Text>
                   Logged At:{' '}
                   {selectedMeal.createdAt &&
-                    format(
-                      new Date(selectedMeal.createdAt.seconds * 1000),
-                      'MMM dd, yyyy h:mm a'
-                    )}
+                    new Date(
+                      selectedMeal.createdAt.seconds * 1000
+                    ).toLocaleString()}
                 </Text>
 
                 <Button

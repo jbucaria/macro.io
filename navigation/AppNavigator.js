@@ -1,14 +1,22 @@
+// AppNavigator.js
+
 import React, { useEffect, useState } from 'react'
+import { View, ActivityIndicator } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
+
+// Import your screens and components
 import LoginForm from '../components/LoginForm'
 import RegistrationForm from '../components/RegistrationForm'
-import MainAppTabs from './MainAppTabs' // Import your Tab Navigator
-import LogExerciseScreen from '../screens/LogExerciseScreen' // Placeholder for Log Exercise
-import SavedFoodsScreen from '../screens/SavedFoodsScreen' // Placeholder for Saved Foods
-import DescribeFoodScreen from '../screens/DescribeFoodScreen' // Placeholder for Describe Food
-import GoalPage from '../screens/GoalPage' // Import GoalPage for setting goals
-import { auth } from '../firebase' // Firebase Authentication
+import MainAppTabs from './MainAppTabs'
+import LogExerciseScreen from '../screens/LogExerciseScreen'
+import SavedFoodsScreen from '../screens/SavedFoodsScreen'
+import DescribeFoodScreen from '../screens/DescribeFoodScreen'
+import GoalPage from '../screens/GoalPage'
+
+// Import Firebase Auth and necessary functions
+import { auth } from '../firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 
 const Stack = createStackNavigator()
 
@@ -18,7 +26,7 @@ const AppNavigator = () => {
 
   // Firebase Auth listener to check if user is logged in
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
       setUser(user)
       setLoading(false) // Set loading to false once the user state is determined
     })
@@ -26,7 +34,11 @@ const AppNavigator = () => {
   }, [])
 
   if (loading) {
-    return null // Placeholder for loading state (could be an ActivityIndicator)
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    )
   }
 
   return (
@@ -34,13 +46,11 @@ const AppNavigator = () => {
       <Stack.Navigator>
         {user ? (
           <>
-            {/* Main App Tabs */}
             <Stack.Screen
               name="MainAppTabs"
               component={MainAppTabs}
-              options={{ headerShown: false }} // Hide header in the tab navigation
+              options={{ headerShown: false }}
             />
-            {/* Additional Routes */}
             <Stack.Screen
               name="LogExercise"
               component={LogExerciseScreen}
@@ -59,7 +69,7 @@ const AppNavigator = () => {
             <Stack.Screen
               name="GoalPage"
               component={GoalPage}
-              options={{ headerShown: true, title: 'Set Nutrition Goals' }} // Add the GoalPage route
+              options={{ headerShown: true, title: 'Set Nutrition Goals' }}
             />
           </>
         ) : (
@@ -67,7 +77,7 @@ const AppNavigator = () => {
             <Stack.Screen
               name="Login"
               component={LoginForm}
-              options={{ headerShown: false }} // Hide header on login screen
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="Register"

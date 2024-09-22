@@ -1,6 +1,7 @@
-import firebase from 'firebase/compat/app'
-import 'firebase/compat/auth'
-import 'firebase/compat/firestore'
+import { initializeApp } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth'
 
 // Firebase configuration object
 const firebaseConfig = {
@@ -11,17 +12,17 @@ const firebaseConfig = {
   messagingSenderId: '300281451674',
   appId: '1:300281451674:android:4e28e2bc518570c6bdbb23',
 }
-// Initialize Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig)
-} else {
-  firebase.app() // Use the already initialized instance
-}
 
-// Enable session persistence
-// firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+// Initialize Firebase app
+const app = initializeApp(firebaseConfig)
+
+// Initialize Firestore
+const db = getFirestore(app)
+
+// Initialize Firebase Auth with persistence
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+})
 
 // Export Firebase services
-export const auth = firebase.auth()
-export const db = firebase.firestore()
-export default firebase
+export { app, auth, db }
