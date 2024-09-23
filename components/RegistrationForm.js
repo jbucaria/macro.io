@@ -1,19 +1,33 @@
-// RegistrationForm.js
-
 import React, { useState } from 'react'
-import { View, TextInput, Button, Text, Alert } from 'react-native'
+import {
+  View,
+  TextInput,
+  Button,
+  Text,
+  Alert,
+  TouchableOpacity,
+} from 'react-native'
 import { auth, db } from '../firebase' // Adjust the path as necessary
 import { useNavigation } from '@react-navigation/native'
 
 // Import Firebase Modular SDK functions
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  getAuth,
+} from 'firebase/auth'
+
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 
 const RegistrationForm = () => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('') // New state for password confirmation
   const [errorMessage, setErrorMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false) // State to toggle password visibility
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false) // State to toggle confirm password visibility
+  const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(false)
   const navigation = useNavigation()
 
   // Email validation function using regex
@@ -51,6 +65,12 @@ const RegistrationForm = () => {
       return
     }
 
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.')
+      return
+    }
+
     try {
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
@@ -62,6 +82,11 @@ const RegistrationForm = () => {
       const user = userCredential.user
 
       if (user) {
+        // Update the displayName in Firebase Authentication
+        await updateProfile(user, {
+          displayName: name.trim(),
+        })
+
         // Reference to the user's document in Firestore
         const userDocRef = doc(db, 'users', user.uid)
 
@@ -75,7 +100,7 @@ const RegistrationForm = () => {
         Alert.alert('Success', 'Account created successfully!', [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('MainAppTabs'), // Navigate to the main app screen after registration
+            onPress: () => navigation.navigate('OnboardingScreen'), // Navigate to the main app screen after registration
           },
         ])
       }
@@ -84,7 +109,6 @@ const RegistrationForm = () => {
       setErrorMessage(error.message || 'Failed to create account.')
     }
   }
-
   return (
     <View className="p-4 flex-1 justify-center bg-white">
       <Text className="text-2xl font-bold text-center mb-6">Register</Text>
@@ -113,12 +137,60 @@ const RegistrationForm = () => {
 
       {/* Password Input */}
       <View className="mb-4">
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          className="border border-gray-300 p-3 mb-2 rounded-lg"
-          secureTextEntry
+        <View className="flex-row items-center">
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            className="border border-gray-300 p-3 mb-2 rounded-lg flex-1"
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Text className="ml-2 text-blue-500">
+              {showPassword ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Confirm Password Input */}
+      <View className="mb-4">
+        <View className="flex-row items-center">
+          <TextInput
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            className="border border-gray-300 p-3 mb-2 rounded-lg flex-1"
+            secureTextEntry={!showConfirmPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Text className="ml-2 text-blue-500">
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View className="flex-1 justify-center">
+        <Text className="text-2xl font-bold text-center mb-6">
+          Privacy Policy
+        </Text>
+        <TouchableOpacity
+          onPress={() => setAgreedToPrivacyPolicy(!agreedToPrivacyPolicy)}
+          className="flex-row items-center mb-6"
+        >
+          <View
+            className={`h-6 w-6 mr-3 border border-gray-400 rounded ${
+              agreedToPrivacyPolicy ? 'bg-blue-500' : 'bg-white'
+            }`}
+          />
+          <Text className="text-lg">I agree to the Privacy Policy</Text>
+        </TouchableOpacity>
+        <Button
+          onPress={nextStep}
+          disabled={!agreedToPrivacyPolicy}
+          color="#1E90FF"
         />
       </View>
 

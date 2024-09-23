@@ -1,41 +1,34 @@
-// AppNavigator.js
-
 import React, { useEffect, useState } from 'react'
 import { View, ActivityIndicator } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
+import { auth } from '../firebase' // Firebase configuration
+import { onAuthStateChanged } from 'firebase/auth'
 
-// Import your screens and components
+// Screens
 import LoginForm from '../components/LoginForm'
 import RegistrationForm from '../components/RegistrationForm'
 import MainAppTabs from './MainAppTabs'
-import LogExerciseScreen from '../screens/LogExerciseScreen'
-import SavedFoodsScreen from '../screens/SavedFoodsScreen'
-import DescribeFoodScreen from '../screens/DescribeFoodScreen'
-import GoalPage from '../screens/GoalPage'
-
-// Import Firebase Auth and necessary functions
-import { auth } from '../firebase'
-import { onAuthStateChanged } from 'firebase/auth'
+import OnboardingScreen from '../screens/OnboardingScreen'
 
 const Stack = createStackNavigator()
 
 const AppNavigator = () => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [onboardingComplete, setOnboardingComplete] = useState(false)
 
-  // Firebase Auth listener to check if user is logged in
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       setUser(user)
-      setLoading(false) // Set loading to false once the user state is determined
+      setLoading(false)
     })
-    return unsubscribe // Unsubscribe from the listener when component unmounts
+    return unsubscribe
   }, [])
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     )
@@ -45,33 +38,21 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator>
         {user ? (
-          <>
+          !onboardingComplete ? (
             <Stack.Screen
-              name="MainAppTabs"
-              component={MainAppTabs}
-              options={{ headerShown: false }}
+              name="Onboarding"
+              component={OnboardingScreen}
+              options={{ headerShown: true, title: 'Set Your Nutrition Goals' }}
             />
-            <Stack.Screen
-              name="LogExercise"
-              component={LogExerciseScreen}
-              options={{ headerShown: true, title: 'Log Exercise' }}
-            />
-            <Stack.Screen
-              name="SavedFoods"
-              component={SavedFoodsScreen}
-              options={{ headerShown: true, title: 'Saved Foods' }}
-            />
-            <Stack.Screen
-              name="DescribeFood"
-              component={DescribeFoodScreen}
-              options={{ headerShown: true, title: 'Describe Food' }}
-            />
-            <Stack.Screen
-              name="GoalPage"
-              component={GoalPage}
-              options={{ headerShown: true, title: 'Set Nutrition Goals' }}
-            />
-          </>
+          ) : (
+            <>
+              <Stack.Screen
+                name="MainAppTabs"
+                component={MainAppTabs}
+                options={{ headerShown: false }}
+              />
+            </>
+          )
         ) : (
           <>
             <Stack.Screen

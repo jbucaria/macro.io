@@ -10,12 +10,12 @@ import {
   ScrollView,
   Button,
 } from 'react-native'
-import { auth, db } from '../firebaseConfig' // Adjust the path as necessary
+import { auth, db } from '../firebase' // Adjust the path as necessary
 import { useNavigation } from '@react-navigation/native'
 
 // Import Firebase Modular SDK functions
 import { doc, setDoc } from 'firebase/firestore'
-import { useAuthState } from 'react-firebase-hooks/auth' // Optional: For auth state management
+// import { useAuthState } from 'react-firebase-hooks/auth' // Optional: For auth state management
 
 const OnboardingScreen = () => {
   const [step, setStep] = useState(1)
@@ -87,11 +87,7 @@ const OnboardingScreen = () => {
       Alert.alert('Success', 'Goals saved successfully!', [
         {
           text: 'OK',
-          onPress: () =>
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainAppTabs' }],
-            }),
+          onPress: () => navigation.navigate('MainAppTabs'), // Use simple navigation
         },
       ])
     } catch (error) {
@@ -121,7 +117,6 @@ const OnboardingScreen = () => {
               <Text className="text-lg">I agree to the Privacy Policy</Text>
             </TouchableOpacity>
             <Button
-              title="Next"
               onPress={nextStep}
               disabled={!agreedToPrivacyPolicy}
               color="#1E90FF"

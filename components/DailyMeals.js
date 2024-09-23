@@ -141,7 +141,7 @@ const DailyMeals = ({ selectedDate }) => {
         visible={modalVisible}
         onRequestClose={() => toggleModal()}
       >
-        <View className="flex-1 justify-center bg-black bg-opacity-50">
+        <View className="flex-1 justify-end bg-black bg-opacity-50">
           <View className="bg-white rounded-t-2xl p-6 h-3/5">
             {selectedMeal && (
               <>
@@ -166,6 +166,11 @@ const DailyMeals = ({ selectedDate }) => {
 
                 <Button
                   title="Delete Meal"
+                  onPress={() => handleDeleteMeal(selectedMeal.id)}
+                  color="red"
+                />
+                <Button
+                  title="Edit Meal"
                   onPress={() => handleDeleteMeal(selectedMeal.id)}
                   color="red"
                 />
