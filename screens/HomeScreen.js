@@ -39,7 +39,6 @@ const HomeScreen = () => {
     }
   }
 
-  console.log('homescreen:', selectedDate)
   return (
     <View className="flex-1 bg-white">
       <DateCarousel

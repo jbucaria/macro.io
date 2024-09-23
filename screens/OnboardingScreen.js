@@ -1,5 +1,3 @@
-// OnboardingScreen.js
-
 import React, { useState } from 'react'
 import {
   View,
@@ -10,14 +8,11 @@ import {
   ScrollView,
   Button,
 } from 'react-native'
-import { auth, db } from '../firebase' // Adjust the path as necessary
+import { auth, db } from '../firebase' // Firebase config
 import { useNavigation } from '@react-navigation/native'
+import { doc, setDoc } from 'firebase/firestore' // Firestore methods
 
-// Import Firebase Modular SDK functions
-import { doc, setDoc } from 'firebase/firestore'
-// import { useAuthState } from 'react-firebase-hooks/auth' // Optional: For auth state management
-
-const OnboardingScreen = () => {
+const OnboardingScreen = ({ setOnboardingComplete }) => {
   const [step, setStep] = useState(1)
   const [currentWeight, setCurrentWeight] = useState('')
   const [goalWeight, setGoalWeight] = useState('')
@@ -29,9 +24,6 @@ const OnboardingScreen = () => {
 
   const navigation = useNavigation()
 
-  // Optional: Monitor authentication state
-  // const [user, loading, error] = useAuthState(auth);
-
   const nextStep = () => setStep(prev => prev + 1)
   const prevStep = () => setStep(prev => prev - 1)
 
@@ -42,14 +34,16 @@ const OnboardingScreen = () => {
       return
     }
 
-    const calculatedProtein = desiredWeight * 1
-    const calculatedCarbs = desiredWeight * 0.7
-    const calculatedFat = desiredWeight * 0.8
+    // Calculating macros based on the goal weight
+    const calculatedProtein = desiredWeight * 1 // 1g protein per kg
+    const calculatedCarbs = desiredWeight * 0.7 // 0.7g carbs per kg
+    const calculatedFat = desiredWeight * 0.8 // 0.8g fat per kg
     const proteinCalories = calculatedProtein * 4
     const carbCalories = calculatedCarbs * 4
     const fatCalories = calculatedFat * 9
     const totalCalories = proteinCalories + carbCalories + fatCalories
 
+    // Set calculated macros
     setCalories(totalCalories.toFixed(0))
     setProtein(calculatedProtein.toFixed(0))
     setFat(calculatedFat.toFixed(0))
@@ -66,7 +60,7 @@ const OnboardingScreen = () => {
     }
 
     try {
-      // Reference to the 'nutrition' document in the 'goals' collection
+      // Saving nutrition goals in Firestore under the 'goals' collection
       const nutritionDocRef = doc(
         db,
         'users',
@@ -74,32 +68,29 @@ const OnboardingScreen = () => {
         'goals',
         'nutrition'
       )
-
-      // Set the goals in Firestore with modular syntax
       await setDoc(nutritionDocRef, {
         calories: parseInt(calories, 10),
         protein: parseInt(protein, 10),
         fat: parseInt(fat, 10),
         carbohydrates: parseInt(carbs, 10),
-        createdAt: new Date(), // Consider using serverTimestamp() for consistency
+        createdAt: new Date(),
       })
 
+      // Mark onboarding as complete
+      const userDocRef = doc(db, 'users', currentUser.uid)
+      await setDoc(userDocRef, { onboardingComplete: true }, { merge: true })
+
       Alert.alert('Success', 'Goals saved successfully!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('MainAppTabs'), // Use simple navigation
-        },
+        { text: 'OK', onPress: () => setOnboardingComplete(true) },
       ])
     } catch (error) {
       console.error('Error saving goals:', error)
       Alert.alert('Error', 'Failed to save goals.')
     }
   }
-
   return (
     <View className="flex-1 bg-white p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Step 1: Privacy Policy Agreement */}
         {step === 1 && (
           <View className="flex-1 justify-center">
             <Text className="text-2xl font-bold text-center mb-6">
@@ -117,6 +108,7 @@ const OnboardingScreen = () => {
               <Text className="text-lg">I agree to the Privacy Policy</Text>
             </TouchableOpacity>
             <Button
+              title="Next" // Ensure the title is a string
               onPress={nextStep}
               disabled={!agreedToPrivacyPolicy}
               color="#1E90FF"
@@ -124,7 +116,6 @@ const OnboardingScreen = () => {
           </View>
         )}
 
-        {/* Step 2: Enter Current Weight */}
         {step === 2 && (
           <View className="flex-1 justify-center">
             <Text className="text-2xl font-bold text-center mb-6">
@@ -140,7 +131,7 @@ const OnboardingScreen = () => {
             <View className="flex-row justify-between">
               <Button title="Back" onPress={prevStep} color="#A9A9A9" />
               <Button
-                title="Next"
+                title="Next" // Ensure the title is a string
                 onPress={nextStep}
                 disabled={currentWeight.trim() === ''}
                 color="#1E90FF"
@@ -149,7 +140,6 @@ const OnboardingScreen = () => {
           </View>
         )}
 
-        {/* Step 3: Enter Goal Weight */}
         {step === 3 && (
           <View className="flex-1 justify-center">
             <Text className="text-2xl font-bold text-center mb-6">
@@ -165,7 +155,7 @@ const OnboardingScreen = () => {
             <View className="flex-row justify-between">
               <Button title="Back" onPress={prevStep} color="#A9A9A9" />
               <Button
-                title="Calculate Macros"
+                title="Calculate Macros" // Ensure the title is a string
                 onPress={calculateMacros}
                 disabled={goalWeight.trim() === ''}
                 color="#32CD32"
@@ -174,7 +164,6 @@ const OnboardingScreen = () => {
           </View>
         )}
 
-        {/* Step 4: Display Calculated Macros and Save */}
         {step === 4 && (
           <View className="flex-1 justify-center">
             <Text className="text-2xl font-bold text-center mb-6">

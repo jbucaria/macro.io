@@ -1,5 +1,3 @@
-// GoalPage.js
-
 import React, { useState } from 'react'
 import {
   View,
@@ -13,6 +11,7 @@ import {
 } from 'react-native'
 import { db, auth } from '../firebase' // Adjust the path as necessary
 import { doc, setDoc } from 'firebase/firestore' // Import Firestore functions
+import { useNavigation } from '@react-navigation/native' // Import navigation
 
 const GoalPage = () => {
   const [manualCalories, setManualCalories] = useState('')
@@ -28,6 +27,8 @@ const GoalPage = () => {
   const [currentWeight, setCurrentWeight] = useState('')
   const [goalWeight, setGoalWeight] = useState('')
 
+  const navigation = useNavigation() // Initialize navigation
+
   const nextStep = () => setStep(step + 1)
   const prevStep = () => setStep(step - 1)
 
@@ -41,12 +42,11 @@ const GoalPage = () => {
     }
 
     // Convert kg to lbs
-    const weightInPounds = desiredWeight * 2.20462
 
     // Calculate macronutrients
-    const calculatedProtein = weightInPounds * 1
-    const calculatedCarbs = weightInPounds * 0.7
-    const calculatedFat = weightInPounds * 0.8
+    const calculatedProtein = desiredWeight * 1
+    const calculatedCarbs = desiredWeight * 0.7
+    const calculatedFat = desiredWeight * 0.8
 
     // Calculate calories
     const proteinCalories = calculatedProtein * 4
@@ -54,14 +54,6 @@ const GoalPage = () => {
     const fatCalories = calculatedFat * 9
 
     const totalCalories = proteinCalories + carbCalories + fatCalories
-
-    // Log calculations for debugging
-    console.log('Generated Macros:', {
-      totalCalories: Math.round(totalCalories),
-      protein: Math.round(calculatedProtein),
-      fat: Math.round(calculatedFat),
-      carbs: Math.round(calculatedCarbs),
-    })
 
     // Update state variables
     setManualCalories(Math.round(totalCalories).toString())
@@ -80,7 +72,6 @@ const GoalPage = () => {
     Alert.alert('Success', 'Your goals have been updated.')
   }
 
-  // Save macros to Firestore
   // Save macros to Firestore
   const saveGoals = async () => {
     const currentUser = auth.currentUser
@@ -104,6 +95,12 @@ const GoalPage = () => {
       })
 
       Alert.alert('Success', 'Goals saved successfully!')
+
+      // Redirect user back to MainAppTabs
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainAppTabs' }],
+      })
     } catch (error) {
       console.error('Error saving goals:', error)
       Alert.alert('Error', 'Failed to save goals.')

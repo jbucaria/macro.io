@@ -95,12 +95,13 @@ const RegistrationForm = () => {
           name: name.trim(),
           email: email.trim(),
           createdAt: serverTimestamp(),
+          onboardingComplete: false,
         })
 
         Alert.alert('Success', 'Account created successfully!', [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('OnboardingScreen'), // Navigate to the main app screen after registration
+            onPress: () => {}, // Navigate to the main app screen after registration
           },
         ])
       }
@@ -188,7 +189,7 @@ const RegistrationForm = () => {
           <Text className="text-lg">I agree to the Privacy Policy</Text>
         </TouchableOpacity>
         <Button
-          onPress={nextStep}
+          title="Next" // Ensure the title is a string
           disabled={!agreedToPrivacyPolicy}
           color="#1E90FF"
         />
