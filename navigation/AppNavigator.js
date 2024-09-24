@@ -12,6 +12,8 @@ import RegistrationForm from '../components/RegistrationForm'
 import MainAppTabs from './MainAppTabs'
 import OnboardingScreen from '../screens/OnboardingScreen'
 import GoalPage from '../screens/GoalPage'
+import DescribeFoodScreen from '../screens/DescribeFoodScreen'
+
 const Stack = createStackNavigator()
 
 const AppNavigator = () => {
@@ -69,6 +71,11 @@ const AppNavigator = () => {
                 name="GoalPage"
                 component={GoalPage} // Add GoalPage to the navigator
                 options={{ headerShown: true, title: 'Set Nutrition Goals' }} // Optionally set header and title
+              />
+              <Stack.Screen
+                name="DescribeFood"
+                component={DescribeFoodScreen} // Add GoalPage to the navigator
+                options={{ headerShown: true, title: 'Describe Meals' }} // Optionally set header and title
               />
             </>
           )
