@@ -1,14 +1,26 @@
+// DescribeFoodScreen.js
+
 import React, { useState } from 'react'
-import { View, TextInput, Button, Text, Alert } from 'react-native'
+import {
+  View,
+  TextInput,
+  Button,
+  Text,
+  Alert,
+  ActivityIndicator,
+} from 'react-native'
 import axios from 'axios'
-import { saveMeal } from '../services/mealService' // Import the saveMeal function
-import { useNavigation } from '@react-navigation/native' // Import useNavigation for navigation
+import { saveMeal } from '../services/mealService' // Adjust the path as necessary
+import { useNavigation, useRoute } from '@react-navigation/native' // Import useRoute for accessing params
+import { format, isValid, parseISO } from 'date-fns' // Import date-fns functions for validation and formatting
 
 const DescribeFoodScreen = () => {
   const [foodInput, setFoodInput] = useState('')
   const [mealData, setMealData] = useState(null)
   const [loading, setLoading] = useState(false)
   const navigation = useNavigation() // Initialize navigation
+  const route = useRoute() // Initialize route
+  const { selectedDate, onAddMeal } = route.params // Destructure selectedDate and onAddMeal from route params
 
   const applicationId = 'cba1023b'
   const applicationKey = '17f44a8c25557cac72d221bf88846285'
@@ -39,12 +51,27 @@ const DescribeFoodScreen = () => {
           carbohydrates: CHOCDF ? Math.round(CHOCDF.quantity) : 0,
         }
 
+        // Validate selectedDate
+        const parsedDate = parseISO(selectedDate)
+        if (!isValid(parsedDate)) {
+          Alert.alert('Error', 'Selected date is invalid.')
+          setLoading(false)
+          return
+        }
+
+        const formattedDate = format(parsedDate, 'yyyy-MM-dd')
+
         // Save the meal using the saveMeal function from mealService
-        await saveMeal(foodInput, meal)
+        await saveMeal(foodInput, meal, formattedDate)
 
         // Set the meal data locally if needed to display it
         setMealData(meal)
         Alert.alert('Success', 'Meal added and saved successfully!')
+
+        // Trigger the onAddMeal callback to refresh data in HomeScreen
+        if (onAddMeal && typeof onAddMeal === 'function') {
+          onAddMeal()
+        }
 
         // Redirect to the HomeScreen after saving the meal
         navigation.navigate('Home')

@@ -12,7 +12,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { db, auth } from '../firebase' // Import Firestore and Auth
 import { doc, getDoc } from 'firebase/firestore' // Import Firestore functions
 
-const DailyTotals = () => {
+const DailyTotals = ({ selectedDate }) => {
   const [totals, setTotals] = useState({
     calories: 0,
     protein: 0,
@@ -35,7 +35,9 @@ const DailyTotals = () => {
       const fetchDailyTotals = async () => {
         const currentUser = auth.currentUser
         if (!currentUser) {
-          Alert.alert('Error', 'No user is logged in.')
+          console.error('No user logged in.')
+          setError('No user authenticated.')
+          setLoading(false)
           return
         }
 
@@ -43,7 +45,13 @@ const DailyTotals = () => {
 
         try {
           // Fetch daily totals
-          const dailyTotalsRef = doc(db, 'users', userId, 'dailyTotals', today)
+          const dailyTotalsRef = doc(
+            db,
+            'users',
+            userId,
+            'dailyTotals',
+            selectedDate
+          )
           const dailyDoc = await getDoc(dailyTotalsRef)
 
           if (dailyDoc.exists()) {
@@ -80,17 +88,26 @@ const DailyTotals = () => {
               'Error',
               'No goals set. Please set your nutrition goals.'
             )
+            setError('No nutrition goals set.')
           }
         } catch (error) {
           console.error(error)
+          setError('Failed to fetch daily totals or goals.')
           Alert.alert('Error', 'Failed to fetch daily totals or goals.')
         } finally {
           setLoading(false)
         }
       }
 
-      fetchDailyTotals()
-    }, [])
+      if (selectedDate) {
+        fetchDailyTotals()
+      }
+
+      // Cleanup function
+      return () => {
+        // Any necessary cleanup can be done here
+      }
+    }, [selectedDate]) // Added selectedDate as a dependency
   )
 
   if (loading) {

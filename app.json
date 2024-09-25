@@ -1,8 +1,7 @@
 {
   "expo": {
-    "name": "macro.io",
-    "slug": "macro.io",
-
+    "name": "macro-io",
+    "slug": "macro-io",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -38,6 +37,11 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ee35a587-60c0-47df-9d10-8f4a5dbfcada"
+      }
+    }
   }
 }

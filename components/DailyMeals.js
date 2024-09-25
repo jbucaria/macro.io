@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore' // Import Firestore functions
 
 const DailyMeals = ({ selectedDate }) => {
+  console.log(selectedDate)
   const [meals, setMeals] = useState([]) // Store all meals for the selected date
   const [selectedMeal, setSelectedMeal] = useState(null) // Store the selected meal for the modal
   const [modalVisible, setModalVisible] = useState(false)
@@ -205,32 +206,26 @@ const DailyMeals = ({ selectedDate }) => {
       setLoading(false) // Stop loading indicator
     }
   }
-
+  console.log(meals.l)
   return (
     <ScrollView className="p-4">
-      {meals.length === 0 ? (
-        <Text className="text-center text-gray-500">
-          No meals for this date.
-        </Text>
-      ) : (
-        meals.map(meal => (
-          <TouchableOpacity
-            key={meal.id}
-            onPress={() => openModal(meal)}
-            className="bg-white p-4 mb-4 rounded-lg shadow-md"
-          >
-            <Text>🍽️ Food: {meal.food}</Text>
-            <Text>🔥 Calories: {meal.calories} kcal</Text>
-            <Text>💪 Protein: {meal.protein}g</Text>
-            <Text>🧈 Fat: {meal.fat}g</Text>
-            <Text>🍞 Carbs: {meal.carbohydrates}g</Text>
-            <Text className="text-gray-400">
-              Logged At:{' '}
-              {meal.createdAt && meal.createdAt.toDate().toLocaleString()}
-            </Text>
-          </TouchableOpacity>
-        ))
-      )}
+      {meals.map(meal => (
+        <TouchableOpacity
+          key={meal.id}
+          onPress={() => openModal(meal)}
+          className="bg-white p-4 mb-4 rounded-lg shadow-md"
+        >
+          <Text>🍽️ Food: {meal.food}</Text>
+          <Text>🔥 Calories: {meal.calories} kcal</Text>
+          <Text>💪 Protein: {meal.protein}g</Text>
+          <Text>🧈 Fat: {meal.fat}g</Text>
+          <Text>🍞 Carbs: {meal.carbohydrates}g</Text>
+          <Text className="text-gray-400">
+            Logged At:{' '}
+            {meal.createdAt && meal.createdAt.toDate().toLocaleString()}
+          </Text>
+        </TouchableOpacity>
+      ))}
 
       {/* Modal for Meal Details and Editing */}
       <Modal

@@ -14,7 +14,7 @@ import {
 import { format } from 'date-fns'
 import { utcToZonedTime } from 'date-fns-tz'
 
-export const saveMeal = async (foodInput, mealData) => {
+export const saveMeal = async (foodInput, mealData, selectedDate) => {
   if (!mealData) {
     throw new Error('No meal data to save. Please add food first.')
   }
@@ -27,10 +27,7 @@ export const saveMeal = async (foodInput, mealData) => {
   const userId = currentUser.uid
 
   try {
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    const now = new Date()
-    const zonedDate = utcToZonedTime(now, timeZone)
-    const today = format(zonedDate, 'yyyy-MM-dd') // Format the date as YYYY-MM-DD
+    const today = selectedDate // Format the date as YYYY-MM-DD
 
     const { calories = 0, protein = 0, fat = 0, carbohydrates = 0 } = mealData
 

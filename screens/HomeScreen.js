@@ -32,6 +32,7 @@ const HomeScreen = () => {
       navigation.navigate('SavedFoods')
     } else if (option === 'DescribeFood') {
       navigation.navigate('DescribeFood', {
+        selectedDate,
         onAddMeal: () => setRefreshTrigger(prev => prev + 1), // Refresh trigger
       })
     } else if (option === 'ScanFood') {
@@ -47,7 +48,7 @@ const HomeScreen = () => {
         }}
         selectedDate={selectedDate}
       />
-      <DailyTotals />
+      <DailyTotals selectedDate={selectedDate} />
       {/* Daily Totals Component */}
       <DailyMeals selectedDate={selectedDate} />
       <View className="flex-1 bg-white">
