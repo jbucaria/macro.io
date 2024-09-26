@@ -7,10 +7,10 @@ import {
   TextInput,
   Button,
   View,
-  Alert, // Import Alert for user feedback
-  ActivityIndicator, // Optional: For loading indicators
+  Alert,
+  ActivityIndicator,
 } from 'react-native'
-import { db, auth } from '../firebase' // Adjust the path as necessary
+import { db, auth } from '../firebase'
 import {
   collection,
   doc,
@@ -19,10 +19,11 @@ import {
   query,
   updateDoc,
   orderBy,
-} from 'firebase/firestore' // Import Firestore functions
+  getDocs,
+  setDoc,
+} from 'firebase/firestore'
 
 const DailyMeals = ({ selectedDate }) => {
-  console.log(selectedDate)
   const [meals, setMeals] = useState([]) // Store all meals for the selected date
   const [selectedMeal, setSelectedMeal] = useState(null) // Store the selected meal for the modal
   const [modalVisible, setModalVisible] = useState(false)
@@ -82,6 +83,53 @@ const DailyMeals = ({ selectedDate }) => {
     }
   }, [selectedDate])
 
+  // Function to recalculate daily totals
+  const updateDailyTotals = async () => {
+    const currentUser = auth.currentUser
+    if (!currentUser) {
+      console.error('No user logged in.')
+      return
+    }
+
+    const userId = currentUser.uid
+
+    try {
+      const mealsSnapshot = await getDocs(
+        collection(db, 'users', userId, 'meals', selectedDate, 'meals')
+      )
+
+      let totalCalories = 0
+      let totalProtein = 0
+      let totalFat = 0
+      let totalCarbohydrates = 0
+
+      mealsSnapshot.forEach(mealDoc => {
+        const mealData = mealDoc.data()
+        totalCalories += mealData.calories || 0
+        totalProtein += mealData.protein || 0
+        totalFat += mealData.fat || 0
+        totalCarbohydrates += mealData.carbohydrates || 0
+      })
+
+      // Update the daily totals document in Firestore
+      const dailyTotalsRef = doc(
+        db,
+        'users',
+        userId,
+        'dailyTotals',
+        selectedDate
+      )
+      await setDoc(dailyTotalsRef, {
+        calories: totalCalories,
+        protein: totalProtein,
+        fat: totalFat,
+        carbohydrates: totalCarbohydrates,
+      })
+    } catch (error) {
+      console.error('Error updating daily totals:', error)
+    }
+  }
+
   // Function to open the modal with selected meal
   const openModal = meal => {
     setSelectedMeal(meal)
@@ -123,7 +171,6 @@ const DailyMeals = ({ selectedDate }) => {
             const userId = currentUser.uid
 
             try {
-              // Reference to the specific meal document
               const mealDocRef = doc(
                 db,
                 'users',
@@ -133,12 +180,12 @@ const DailyMeals = ({ selectedDate }) => {
                 'meals',
                 mealId
               )
-
-              // Delete the meal document
               await deleteDoc(mealDocRef)
 
               Alert.alert('Success', 'Meal deleted successfully.')
               closeModal()
+              // Update the daily totals after deleting a meal
+              await updateDailyTotals()
             } catch (error) {
               console.error('Error deleting meal:', error)
               Alert.alert('Error', 'Failed to delete meal. Please try again.')
@@ -152,7 +199,6 @@ const DailyMeals = ({ selectedDate }) => {
 
   // Function to handle updating a meal
   const handleUpdateMeal = async () => {
-    // Basic validation
     if (!editedMeal.food.trim()) {
       Alert.alert('Validation Error', 'Food name cannot be empty.')
       return
@@ -167,7 +213,7 @@ const DailyMeals = ({ selectedDate }) => {
       return
     }
 
-    setLoading(true) // Start loading indicator
+    setLoading(true)
 
     const currentUser = auth.currentUser
     if (!currentUser || !editedMeal) {
@@ -194,19 +240,21 @@ const DailyMeals = ({ selectedDate }) => {
         protein: editedMeal.protein,
         fat: editedMeal.fat,
         carbohydrates: editedMeal.carbohydrates,
-        // Optionally, update 'updatedAt' timestamp
         updatedAt: new Date(),
       })
       Alert.alert('Success', 'Meal updated successfully.')
       closeModal()
+
+      // Update the daily totals after editing a meal
+      await updateDailyTotals()
     } catch (error) {
       console.error('Error updating meal:', error)
       Alert.alert('Error', 'Failed to update meal. Please try again.')
     } finally {
-      setLoading(false) // Stop loading indicator
+      setLoading(false)
     }
   }
-  console.log(meals.l)
+
   return (
     <ScrollView className="p-4">
       {meals.map(meal => (
@@ -264,12 +312,12 @@ const DailyMeals = ({ selectedDate }) => {
                   <Button
                     title="Edit Meal"
                     onPress={startEditing}
-                    color="#1E90FF" // DodgerBlue
+                    color="#1E90FF"
                   />
                   <Button
                     title="Delete Meal"
                     onPress={() => handleDeleteMeal(selectedMeal.id)}
-                    color="#FF4500" // OrangeRed
+                    color="#FF4500"
                   />
                 </View>
               </>
@@ -350,18 +398,18 @@ const DailyMeals = ({ selectedDate }) => {
                 {/* Save and Cancel Buttons */}
                 <View className="mt-6 space-y-2">
                   {loading ? (
-                    <ActivityIndicator size="large" color="#32CD32" /> // LimeGreen
+                    <ActivityIndicator size="large" color="#32CD32" />
                   ) : (
                     <>
                       <Button
                         title="Save Changes"
                         onPress={handleUpdateMeal}
-                        color="#32CD32" // LimeGreen
+                        color="#32CD32"
                       />
                       <Button
                         title="Cancel"
                         onPress={closeModal}
-                        color="#A9A9A9" // DarkGray
+                        color="#A9A9A9"
                       />
                     </>
                   )}

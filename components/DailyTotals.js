@@ -1,6 +1,4 @@
-// DailyTotals.js
-
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,9 +6,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native'
-import { useFocusEffect, useNavigation } from '@react-navigation/native'
-import { db, auth } from '../firebase' // Import Firestore and Auth
-import { doc, getDoc } from 'firebase/firestore' // Import Firestore functions
+import { useNavigation } from '@react-navigation/native'
+import { db, auth } from '../firebase'
+import { doc, getDoc, onSnapshot } from 'firebase/firestore' // Make sure getDoc is imported
 
 const DailyTotals = ({ selectedDate }) => {
   const [totals, setTotals] = useState({
@@ -26,95 +24,83 @@ const DailyTotals = ({ selectedDate }) => {
     carbohydrates: 0,
   })
   const [loading, setLoading] = useState(true)
-  const navigation = useNavigation() // Initialize navigation
+  const navigation = useNavigation()
 
-  const today = new Date().toISOString().split('T')[0]
+  useEffect(() => {
+    const currentUser = auth.currentUser
+    if (!currentUser) {
+      console.error('No user logged in.')
+      setLoading(false)
+      return
+    }
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const fetchDailyTotals = async () => {
-        const currentUser = auth.currentUser
-        if (!currentUser) {
-          console.error('No user logged in.')
-          setError('No user authenticated.')
-          setLoading(false)
-          return
+    const userId = currentUser.uid
+
+    const dailyTotalsRef = doc(db, 'users', userId, 'dailyTotals', selectedDate)
+
+    const unsubscribe = onSnapshot(dailyTotalsRef, doc => {
+      if (doc.exists()) {
+        const data = doc.data()
+        setTotals({
+          calories: data.calories || 0,
+          protein: data.protein || 0,
+          fat: data.fat || 0,
+          carbohydrates: data.carbohydrates || 0,
+        })
+      } else {
+        setTotals({
+          calories: 0,
+          protein: 0,
+          fat: 0,
+          carbohydrates: 0,
+        })
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      unsubscribe() // Clean up listener on unmount
+    }
+  }, [selectedDate])
+
+  useEffect(() => {
+    const fetchGoals = async () => {
+      const currentUser = auth.currentUser
+      if (!currentUser) {
+        console.error('No user logged in.')
+        setLoading(false)
+        return
+      }
+
+      const userId = currentUser.uid
+      try {
+        const goalsRef = doc(db, 'users', userId, 'goals', 'nutrition')
+        const goalsDoc = await getDoc(goalsRef) // Correct usage of getDoc
+
+        if (goalsDoc.exists()) {
+          const data = goalsDoc.data()
+          setGoals({
+            calories: data.calories || 0,
+            protein: data.protein || 0,
+            fat: data.fat || 0,
+            carbohydrates: data.carbohydrates || 0,
+          })
+        } else {
+          Alert.alert('Error', 'No goals set. Please set your nutrition goals.')
         }
-
-        const userId = currentUser.uid
-
-        try {
-          // Fetch daily totals
-          const dailyTotalsRef = doc(
-            db,
-            'users',
-            userId,
-            'dailyTotals',
-            selectedDate
-          )
-          const dailyDoc = await getDoc(dailyTotalsRef)
-
-          if (dailyDoc.exists()) {
-            const data = dailyDoc.data()
-            setTotals({
-              calories: data.calories || 0,
-              protein: data.protein || 0,
-              fat: data.fat || 0,
-              carbohydrates: data.carbohydrates || 0,
-            })
-          } else {
-            setTotals({
-              calories: 0,
-              protein: 0,
-              fat: 0,
-              carbohydrates: 0,
-            })
-          }
-
-          // Fetch user goals
-          const goalsRef = doc(db, 'users', userId, 'goals', 'nutrition')
-          const goalsDoc = await getDoc(goalsRef)
-
-          if (goalsDoc.exists()) {
-            const data = goalsDoc.data()
-            setGoals({
-              calories: data.calories || 0,
-              protein: data.protein || 0,
-              fat: data.fat || 0,
-              carbohydrates: data.carbohydrates || 0,
-            })
-          } else {
-            Alert.alert(
-              'Error',
-              'No goals set. Please set your nutrition goals.'
-            )
-            setError('No nutrition goals set.')
-          }
-        } catch (error) {
-          console.error(error)
-          setError('Failed to fetch daily totals or goals.')
-          Alert.alert('Error', 'Failed to fetch daily totals or goals.')
-        } finally {
-          setLoading(false)
-        }
+      } catch (error) {
+        console.error(error)
+        Alert.alert('Error', 'Failed to fetch nutrition goals.')
       }
+    }
 
-      if (selectedDate) {
-        fetchDailyTotals()
-      }
-
-      // Cleanup function
-      return () => {
-        // Any necessary cleanup can be done here
-      }
-    }, [selectedDate]) // Added selectedDate as a dependency
-  )
+    fetchGoals()
+  }, [])
 
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />
   }
 
-  // Calculate the remaining macronutrients
   const remainingCalories = goals.calories - totals.calories
   const remainingProtein = goals.protein - totals.protein
   const remainingFat = goals.fat - totals.fat
@@ -122,9 +108,8 @@ const DailyTotals = ({ selectedDate }) => {
 
   return (
     <View className="p-4">
-      {/* Total Calories Button */}
       <TouchableOpacity
-        onPress={() => navigation.navigate('GoalPage')} // Navigate to GoalPage
+        onPress={() => navigation.navigate('GoalPage')}
         className="bg-green-500 p-4 mb-4 rounded-lg"
       >
         <Text className="text-white text-lg font-bold text-center">
@@ -132,7 +117,6 @@ const DailyTotals = ({ selectedDate }) => {
         </Text>
       </TouchableOpacity>
 
-      {/* Macronutrient Boxes */}
       <View className="flex-row justify-between">
         <View className="bg-red-500 p-4 w-1/3 mr-2 rounded-lg">
           <Text className="text-white font-bold text-center">Protein Left</Text>
