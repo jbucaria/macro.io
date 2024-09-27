@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
@@ -8,6 +8,7 @@ import DailyTotals from '../components/DailyTotals'
 import DailyMeals from '../components/DailyMeals'
 import DateCarousel from '../components/DateCarousel'
 import { format } from 'date-fns'
+import { Camera } from 'react-native-vision-camera' // Import Vision Camera
 
 const HomeScreen = () => {
   const [selectedDate, setSelectedDate] = useState(
@@ -18,10 +19,22 @@ const HomeScreen = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0) // Trigger for refreshing last meal
   const navigation = useNavigation()
 
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const cameraPermission = await Camera.requestCameraPermission()
+      if (cameraPermission === 'denied') {
+        console.error('Camera permission denied.')
+      }
+    }
+
+    requestPermissions()
+  }, [])
+
   const toggleModal = () => setModalVisible(!modalVisible)
 
   const toggleCamera = () => {
     setCameraVisible(!cameraVisible)
+    console.log('camera visibility:', cameraVisible)
   }
 
   const handleOptionSelect = option => {
@@ -49,7 +62,6 @@ const HomeScreen = () => {
         selectedDate={selectedDate}
       />
       <DailyTotals selectedDate={selectedDate} />
-      {/* Daily Totals Component */}
       <DailyMeals selectedDate={selectedDate} />
       <View className="flex-1 bg-white">
         <DailyMeals />
@@ -60,13 +72,11 @@ const HomeScreen = () => {
       >
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
-      {/* Bottom Modal Component */}
       <BottomModal
         visible={modalVisible}
         onClose={toggleModal}
         onOptionSelect={handleOptionSelect}
       />
-      {/* Scan Food Camera Modal */}
       <ScanFoodCamera
         visible={cameraVisible}
         onClose={toggleCamera}
